@@ -2,6 +2,7 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 #include <DHT.h>
+#include <Tone32.h>
 
 const char* ssid = "KMMM";
 const char* password = "piast425";
@@ -15,6 +16,8 @@ const char* PARAM_INPUT_2 = "state";
 #define whiteLED 2
 #define redLED 4
 #define greenLED 15
+#define buzzer 27
+#define redLED2 26
 DHT dht;
 
 // Create AsyncWebServer object on port 80
@@ -52,6 +55,7 @@ String readDistance() {
   digitalWrite(trigPin, LOW);
  
   int d = pulseIn(echoPin, HIGH)/58;
+
   if (isnan(d)) {
     Serial.println("Failed to read from HC_SR04 sensor!");
     return "--";
@@ -59,6 +63,29 @@ String readDistance() {
   else {
     Serial.println(d);
     return String(d);
+  }
+}
+
+String readBuzzer(){
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+ 
+  int d = pulseIn(echoPin, HIGH)/58;
+
+  if (isnan(d)) {
+    Serial.println("Failed");
+    return "--";
+  }
+  else {
+    if(d < 20){
+      return "ALARM";
+    }
+    else{
+      return "Brak alarmu";
+    }
   }
 }
 
@@ -99,6 +126,13 @@ const char index_html[] PROGMEM = R"rawliteral(
                 <span class="dht-labels">Distance&nbsp;</span>
                 <span id="distance">%DISTANCE% </span>
                 <span>&nbsp;cm</span>
+              </p>
+
+              <p class="d-flex justify-content-center">
+                 
+                <span class="dht-labels">Buzzer&nbsp;</span>
+                <span id="buzzer">%BUZZER% </span>
+                <span>&nbsp;!</span>
               </p>
 
 	            <p class="d-flex justify-content-center">
@@ -166,6 +200,18 @@ const char index_html[] PROGMEM = R"rawliteral(
     xhttp.open("GET", "/distance", true);
     xhttp.send();
   }, 500 ) ;
+
+    setInterval(function ( ) {
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        document.getElementById("buzzer").innerHTML = this.responseText;
+      }
+    };
+    xhttp.open("GET", "/buzzer", true);
+    xhttp.send();
+  }, 500 ) ;
+
   </script>
 </html>)rawliteral";
 
@@ -190,6 +236,9 @@ String processor(const String& var){
   else if(var == "DISTANCE"){
     return readDistance();
   }
+  else if(var == "BUZZER"){
+    return readBuzzer();
+  }
   else if(var == "BUTTONPLACEHOLDER"){
     String buttons = "";
     buttons += "<h4>Green LED</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"15\" " + outputState(greenLED) + "><span class=\"slider\"></span></label>";
@@ -210,10 +259,13 @@ void setup(){
   pinMode(whiteLED, OUTPUT);
   pinMode(redLED, OUTPUT);
   pinMode(greenLED , OUTPUT);
+  pinMode(buzzer, OUTPUT);
+  pinMode(redLED2, OUTPUT);
 
   digitalWrite(whiteLED, LOW);
   digitalWrite(redLED, LOW);
   digitalWrite(greenLED, LOW); 
+  digitalWrite(redLED2, LOW);
 
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
@@ -237,6 +289,9 @@ void setup(){
   });
     server.on("/distance", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send_P(200, "text/plain", readDistance().c_str());
+  });
+    server.on("/buzzer", HTTP_GET, [](AsyncWebServerRequest *request){
+    request->send_P(200, "text/plain", readBuzzer().c_str());
   });
 
     // Send a GET request to <ESP_IP>/update?output=<inputMessage1>&state=<inputMessage2>
