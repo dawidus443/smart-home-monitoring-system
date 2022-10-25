@@ -16,7 +16,7 @@ const char* PARAM_INPUT_2 = "state";
 #define whiteLED 2
 #define redLED 4
 #define greenLED 15
-#define buzzer 27
+#define buzzerSignal 27
 #define redLED2 26
 DHT dht;
 
@@ -47,7 +47,7 @@ String readDHTHumidity() {
   }
 }
 
-String readDistance() {
+int distance(){
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
@@ -55,7 +55,10 @@ String readDistance() {
   digitalWrite(trigPin, LOW);
  
   int d = pulseIn(echoPin, HIGH)/58;
+  return d;
+}
 
+String readDistance(int d = distance()) {
   if (isnan(d)) {
     Serial.println("Failed to read from HC_SR04 sensor!");
     return "--";
@@ -66,24 +69,18 @@ String readDistance() {
   }
 }
 
-String readBuzzer(){
-  digitalWrite(trigPin, LOW);
-  delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(trigPin, LOW);
- 
-  int d = pulseIn(echoPin, HIGH)/58;
-
+String signaling(int d = distance()){
   if (isnan(d)) {
     Serial.println("Failed");
     return "--";
   }
   else {
     if(d < 20){
+      digitalWrite(redLED2, HIGH);
       return "ALARM";
     }
     else{
+      digitalWrite(redLED2, LOW);
       return "Brak alarmu";
     }
   }
@@ -199,9 +196,6 @@ const char index_html[] PROGMEM = R"rawliteral(
     };
     xhttp.open("GET", "/distance", true);
     xhttp.send();
-  }, 500 ) ;
-
-    setInterval(function ( ) {
     var xhttp = new XMLHttpRequest();
     xhttp.onreadystatechange = function() {
       if (this.readyState == 4 && this.status == 200) {
@@ -210,8 +204,8 @@ const char index_html[] PROGMEM = R"rawliteral(
     };
     xhttp.open("GET", "/buzzer", true);
     xhttp.send();
-  }, 500 ) ;
-
+  }, 1000 ) ;
+  
   </script>
 </html>)rawliteral";
 
@@ -234,10 +228,10 @@ String processor(const String& var){
     return readDHTHumidity();
   }
   else if(var == "DISTANCE"){
-    return readDistance();
+    return readDistance(distance());
   }
   else if(var == "BUZZER"){
-    return readBuzzer();
+    return signaling(distance());
   }
   else if(var == "BUTTONPLACEHOLDER"){
     String buttons = "";
@@ -259,13 +253,14 @@ void setup(){
   pinMode(whiteLED, OUTPUT);
   pinMode(redLED, OUTPUT);
   pinMode(greenLED , OUTPUT);
-  pinMode(buzzer, OUTPUT);
+  pinMode(buzzerSignal, OUTPUT);
   pinMode(redLED2, OUTPUT);
 
   digitalWrite(whiteLED, LOW);
   digitalWrite(redLED, LOW);
   digitalWrite(greenLED, LOW); 
   digitalWrite(redLED2, LOW);
+  digitalWrite(buzzerSignal, LOW);
 
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
@@ -288,10 +283,10 @@ void setup(){
     request->send_P(200, "text/plain", readDHTHumidity().c_str());
   });
     server.on("/distance", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", readDistance().c_str());
+    request->send_P(200, "text/plain", readDistance(distance()).c_str());
   });
     server.on("/buzzer", HTTP_GET, [](AsyncWebServerRequest *request){
-    request->send_P(200, "text/plain", readBuzzer().c_str());
+    request->send_P(200, "text/plain", signaling(distance()).c_str());
   });
 
     // Send a GET request to <ESP_IP>/update?output=<inputMessage1>&state=<inputMessage2>
