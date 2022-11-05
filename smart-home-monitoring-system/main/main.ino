@@ -2,22 +2,21 @@
 #include <ESPAsyncWebServer.h>
 #include <AsyncTCP.h>
 #include <DHT.h>
-#include <Tone32.h>
 
-const char* ssid = "KMMM";
-const char* password = "piast425";
-
+const char* ssid = "DBadddmmmooo";
+const char* password = "abcdefg123";
+int count;
 const char* PARAM_INPUT_1 = "output";
 const char* PARAM_INPUT_2 = "state";
 
 #define trigPin 12
 #define echoPin 13
 #define DHTPIN 14 
-#define whiteLED 2
-#define redLED 4
+#define yellowLED 2
+#define blueLED 4
 #define greenLED 15
-#define buzzerSignal 27
-#define redLED2 26
+#define redLED 27
+#define button 32
 DHT dht;
 
 // Create AsyncWebServer object on port 80
@@ -25,7 +24,7 @@ AsyncWebServer server(80);
 
 String readDHTTemperature() {
   int t = dht.getTemperature();
-  if (isnan(t)) {    
+  if (isnan(t) || t == 2147483647) {    
     Serial.println("Failed to read from DHT sensor!");
     return "--";
   }
@@ -37,7 +36,7 @@ String readDHTTemperature() {
 
 String readDHTHumidity() {
   int h = dht.getHumidity();
-  if (isnan(h)) {
+  if (isnan(h) || h == 2147483647) {
     Serial.println("Failed to read from DHT sensor!");
     return "--";
   }
@@ -58,6 +57,15 @@ int distance(){
   return d;
 }
 
+int counter(int count){
+  if(digitalRead(button) == LOW){
+    count = count + 1;
+    Serial.print("licznik ");
+    Serial.println(count);
+  }
+  return count;
+}
+
 String readDistance(int d = distance()) {
   if (isnan(d)) {
     Serial.println("Failed to read from HC_SR04 sensor!");
@@ -76,11 +84,11 @@ String signaling(int d = distance()){
   }
   else {
     if(d < 20){
-      digitalWrite(redLED2, HIGH);
+      digitalWrite(redLED, HIGH);
       return "ALARM";
     }
     else{
-      digitalWrite(redLED2, LOW);
+      digitalWrite(redLED, LOW); 
       return "Brak alarmu";
     }
   }
@@ -127,15 +135,13 @@ const char index_html[] PROGMEM = R"rawliteral(
 
               <p class="d-flex justify-content-center">
                  
-                <span class="dht-labels">Buzzer&nbsp;</span>
+                <span class="dht-labels">Status:&nbsp;</span>
                 <span id="buzzer">%BUZZER% </span>
                 <span>&nbsp;!</span>
               </p>
 
 	            <p class="d-flex justify-content-center">
                %BUTTONPLACEHOLDER%
-              </p>
-		
               <script>
                 function toggleCheckbox(element) {
                 var xhr = new XMLHttpRequest();
@@ -144,6 +150,7 @@ const char index_html[] PROGMEM = R"rawliteral(
                 xhr.send();
                 }
               </script>
+              </p>
 
             </div>
           <div class="col">
@@ -236,8 +243,8 @@ String processor(const String& var){
   else if(var == "BUTTONPLACEHOLDER"){
     String buttons = "";
     buttons += "<h4>Green LED</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"15\" " + outputState(greenLED) + "><span class=\"slider\"></span></label>";
-    buttons += "<h4>Red LED</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"4\" " + outputState(redLED) + "><span class=\"slider\"></span></label>";
-    buttons += "<h4>White LED</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"2\" " + outputState(whiteLED) + "><span class=\"slider\"></span></label>";
+    buttons += "<h4>Blue LED</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"4\" " + outputState(blueLED) + "><span class=\"slider\"></span></label>";
+    buttons += "<h4>Yellow LED</h4><label class=\"switch\"><input type=\"checkbox\" onchange=\"toggleCheckbox(this)\" id=\"2\" " + outputState(yellowLED) + "><span class=\"slider\"></span></label>";
     return buttons;
   }
   return String();
@@ -250,17 +257,16 @@ void setup(){
   dht.setup(DHTPIN);
   pinMode(trigPin, OUTPUT); 
   pinMode(echoPin, INPUT);
-  pinMode(whiteLED, OUTPUT);
-  pinMode(redLED, OUTPUT);
+  pinMode(button, INPUT_PULLUP);
+  pinMode(yellowLED, OUTPUT);
+  pinMode(blueLED, OUTPUT);
   pinMode(greenLED , OUTPUT);
-  pinMode(buzzerSignal, OUTPUT);
-  pinMode(redLED2, OUTPUT);
+  pinMode(redLED, OUTPUT);
 
-  digitalWrite(whiteLED, LOW);
-  digitalWrite(redLED, LOW);
+  digitalWrite(yellowLED, LOW);
+  digitalWrite(blueLED, LOW);
   digitalWrite(greenLED, LOW); 
-  digitalWrite(redLED2, LOW);
-  digitalWrite(buzzerSignal, LOW);
+  digitalWrite(redLED, LOW);
 
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
