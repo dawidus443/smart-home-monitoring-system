@@ -3,8 +3,8 @@
 #include <AsyncTCP.h>
 #include <DHT.h>
 
-const char* ssid = "DBadddmmmooo";
-const char* password = "abcdefg123";
+const char* ssid = "KMMM";
+const char* password = "piast425";
 int count;
 const char* PARAM_INPUT_1 = "output";
 const char* PARAM_INPUT_2 = "state";
