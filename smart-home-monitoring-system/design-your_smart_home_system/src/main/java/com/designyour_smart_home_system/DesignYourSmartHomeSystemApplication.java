@@ -1,0 +1,13 @@
+package com.designyour_smart_home_system;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class DesignYourSmartHomeSystemApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(DesignYourSmartHomeSystemApplication.class, args);
+	}
+
+}
